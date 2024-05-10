@@ -36,8 +36,8 @@ int is_prime(int n) {
 
 // Function to process each file
 void* process_file(void* arg) {
-    ThreadArg *thread_arg = (ThreadArg*)arg;  // Cast arg back to ThreadArg structure
-    FILE* file = fopen(thread_arg->filename, "r");  // Open the file for reading
+    ThreadArg *thread_arg = (ThreadArg*)arg;  // Casting arg back to ThreadArg structure
+    FILE* file = fopen(thread_arg->filename, "r");  // Opening the file for reading
     if (file == NULL) {
         perror("Error opening file");
         free(thread_arg->filename);  // Free allocated memory for filename
@@ -45,16 +45,24 @@ void* process_file(void* arg) {
         pthread_exit(NULL);  // Exit the thread
     }
 
-    int prime_count = 0, num;
-    while (fscanf(file, "%d", &num) == 1) {  // Read integers from the file
+    int prime_count = 0;
+    int num;
+    
+    // fscanf() reads integers from the file one by one
+    // If a number is successfully read, it checks whether the number is prime using the is_prime() function
+    while (fscanf(file, "%d", &num) == 1) {
         if (is_prime(num)) {
-            prime_count++;
+            prime_count++; // If the number is prime, incrementing the prime_count
         }
     }
     fclose(file);
-
+    
+    // Finds the last occurrence of '/' in the file path
     char* short_filename = strrchr(thread_arg->filename, '/') + 1;  // Extract only the filename
+    
+    // Prints the thread ID, the number of primes found, and the filename to standard output
     printf("Thread %d has found %d primes in %s\n", thread_arg->thread_id, prime_count, short_filename);
+    
     free(thread_arg->filename);  // Free the filename memory
     free(thread_arg);  // Free the structure memory
     dispatch_semaphore_signal(semaphore);  // Signal the semaphore
@@ -63,23 +71,31 @@ void* process_file(void* arg) {
 
 // Function to traverse the specified directory and launch threads
 void traverse_directory(const char* directory_name) {
-    DIR* dir = opendir(directory_name);  // Open the directory
+    DIR* dir = opendir(directory_name);  // Opening the directory
     if (dir == NULL) {
-        perror("Error opening directory");  // Print error if directory cannot be opened
-        exit(EXIT_FAILURE);  // Exit the program with a failure status
+        perror("Error opening directory");  // Printing error if directory cannot be opened
+        exit(EXIT_FAILURE);  // Exiting the program with a failure status
     }
 
     struct dirent* entry;  // Directory entry structure
+    // Entry will point to each directory entry within the given directory
+
     pthread_t threads[MAX_PATH];  // Array to store thread identifiers
     int t_count = 0;  // Counter for threads
-    while ((entry = readdir(dir)) != NULL && t_count < MAX_PATH) {  // Read directory entries
-        if (entry->d_type == DT_REG) {  // Check if the entry is a regular file
-            ThreadArg *thread_arg = malloc(sizeof(ThreadArg));  // Allocate memory for thread arguments
-            thread_arg->filename = malloc(MAX_PATH);  // Allocate memory for the filename
-            snprintf(thread_arg->filename, MAX_PATH, "%s/%s", directory_name, entry->d_name);  // Construct full path
+    
+    // readdir() reads the next entry in the directory,
+    // The loop continues until there are no more entries or the maximum limit of MAX_PATH threads is reached
+    while ((entry = readdir(dir)) != NULL && t_count < MAX_PATH) {  // Reading directory entries
+        if (entry->d_type == DT_REG) {  // Checking if the entry is a regular file
+            ThreadArg *thread_arg = malloc(sizeof(ThreadArg));  // Allocating memory for thread arguments
+            thread_arg->filename = malloc(MAX_PATH);  // Allocating memory for the filename
+            snprintf(thread_arg->filename, MAX_PATH, "%s/%s", directory_name, entry->d_name);  // Constructing full path of the file
             thread_arg->thread_id = t_count + 1;  // Assign thread ID
-
-            dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);  // Wait on semaphore
+            
+            // Waits for the semaphore, which limits the number of concurrent threads as per the user input
+            dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+            
+            // Creates a new thread that starts execution by calling process_file function with thread_arg as its argument
             pthread_create(&threads[t_count], NULL, process_file, (void*)thread_arg);  // Create a new thread
             t_count++;  // Increment thread counter
         }
