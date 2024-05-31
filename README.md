@@ -43,7 +43,7 @@ time ./main_executable myDir 4
 - **Prime Checking**: Utilizes an efficient algorithm to check for prime numbers.
 - **Semaphore**: Uses GCD's `dispatch_semaphore_t` to limit the number of concurrently running threads based on the user input.
 
-## Error Handling
-- The program handles typical errors such as file not opening or directory not being accessible, and exits gracefully.
+## Example Output
+![Screenshot 2024-05-31 at 19 03 14](https://github.com/sarparslan/File-Processing-With-Threads/assets/96438389/da9afe24-7175-4abf-9eaf-307e78ce011c)
 
 
